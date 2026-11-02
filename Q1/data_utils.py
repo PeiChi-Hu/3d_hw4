@@ -254,7 +254,7 @@ def colours_from_spherical_harmonics(spherical_harmonics, gaussian_dirs):
     sh[:, 14] = C3_5 * z * (x * x - y * y)
     sh[:, 15] = C3_6 * x * (x * x - 3.0 * y * y)
 
-    coef = spherical_harmonics.view(N, 3, 16).permute(0, 2, 1)
+    coef = spherical_harmonics.view(N, 3, 16)
     rgb = torch.bmm(coef, sh.unsqueeze(-1)).squeeze(-1)
 
     colours = torch.clamp(rgb + 0.5, min=0.0)
