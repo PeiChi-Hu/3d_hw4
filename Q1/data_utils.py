@@ -222,7 +222,7 @@ def colours_from_spherical_harmonics(spherical_harmonics, gaussian_dirs):
     C2_4 = 0.25 * math.sqrt(15.0 / math.pi)
 
     C3_0 = -0.25 * math.sqrt(35.0 / (2.0 * math.pi))
-    C3_1 = math.sqrt(105.0 / math.pi)
+    C3_1 = 0.5 * math.sqrt(105.0 / math.pi)
     C3_2 = -0.25 * math.sqrt(21.0 / (2.0 * math.pi))
     C3_3 = 0.25 * math.sqrt(7.0 / math.pi)
     C3_4 = -0.25 * math.sqrt(21.0 / (2.0 * math.pi))
@@ -254,8 +254,9 @@ def colours_from_spherical_harmonics(spherical_harmonics, gaussian_dirs):
     sh[:, 14] = C3_5 * z * (x * x - y * y)
     sh[:, 15] = C3_6 * x * (x * x - 3.0 * y * y)
 
-    coef = spherical_harmonics.view(N, 3, 16)
-    rgb = torch.bmm(coef, sh.unsqueeze(-1)).squeeze(-1)
+    # SH layout from load_gaussians_from_ply is (N, 16 coeffs, 3 channels), coefficient-major
+    coef = spherical_harmonics.view(N, 16, 3)
+    rgb = torch.sum(coef * sh.unsqueeze(-1), dim=1)  # (N, 3)
 
     colours = torch.clamp(rgb + 0.5, min=0.0)
     return colours
