@@ -283,8 +283,7 @@ class Gaussians:
         ### YOUR CODE HERE ###
         # HINT: Can you extract the world to camera rotation matrix (W) from one of the inputs
         # of this function?
-        R_cam = camera.get_world_to_view_transform().get_matrix()[:3, :3]
-        W = R_cam.transpose(-2, -1).unsqueeze(0).expand(means_3D.shape[0], -1, -1)  # (N, 3, 3)
+        W = camera.R.expand(means_3D.shape[0], -1, -1)  # (N, 3, 3)
 
         ### YOUR CODE HERE ###
         # HINT: Can you find a function in this file that can help?
