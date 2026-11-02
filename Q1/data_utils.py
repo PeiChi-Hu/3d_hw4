@@ -3,6 +3,7 @@ import torch
 import imageio
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 from PIL import Image
 from plyfile import PlyData
@@ -210,5 +211,47 @@ def colours_from_spherical_harmonics(spherical_harmonics, gaussian_dirs):
                                     RGB colour.
     """
     ### YOUR CODE HERE ###
-    colours = None
+    C0 = 0.5 * math.sqrt(1.0 / math.pi)
+
+    C1 = math.sqrt(3.0 / (4.0 * math.pi))
+
+    C2_0 = 0.5 * math.sqrt(15.0 / math.pi)
+    C2_1 = 0.25 * math.sqrt(5.0 / math.pi)
+    C2_2 = 0.25 * math.sqrt(15.0 / math.pi)
+
+    C3_0 = 0.25 * math.sqrt(35.0 / (2.0 * math.pi))
+    C3_1 = math.sqrt(105.0 / math.pi)
+    C3_2 = 0.25 * math.sqrt(21.0 / (2.0 * math.pi))
+    C3_3 = 0.25 * math.sqrt(7.0 / math.pi)
+    C3_4 = 0.25 * math.sqrt(105.0 / math.pi)
+
+    direction = torch.nn.functional.normalize(gaussian_dirs, dim=-1)
+    x, y, z = direction[:, 0], direction[:, 1], direction[:, 2]
+    N = spherical_harmonics.shape[0]
+
+    sh = torch.zeros((N, 16), device=spherical_harmonics.device, dtype=spherical_harmonics.dtype)
+    sh[:, 0] = C0
+
+    sh[:, 1] = -C1 * y
+    sh[:, 2] = C1 * z
+    sh[:, 3] = -C1 * x
+
+    sh[:, 4] = C2_0 * x * y
+    sh[:, 5] = -C2_0 * y * z
+    sh[:, 6] = C2_1 * (2.0 * z * z - x * x - y * y)
+    sh[:, 7] = -C2_0 * x * z
+    sh[:, 8] = C2_2 * (x * x - y * y)
+
+    sh[:, 9] = -C3_0 * y * (3.0 * x * x - y * y)
+    sh[:, 10] = C3_1 * x * y * z
+    sh[:, 11] = -C3_2 * y * (4.0 * z * z - x * x - y * y)
+    sh[:, 12] = C3_3 * z * (2.0 * z * z - 3.0 * x * x - 3.0 * y * y)
+    sh[:, 13] = -C3_2 * x * (4.0 * z * z - x * x - y * y)
+    sh[:, 14] = C3_4 * z * (x * x - y * y)
+    sh[:, 15] = -C3_0 * x * (x * x - 3.0 * y * y)
+
+    coef = spherical_harmonics.view(N, 3, 16)
+    rgb = torch.bmm(coef, sh.unsqueeze(-1)).squeeze(-1)
+
+    colours = torch.clamp(rgb + 0.5, min=0.0)
     return colours
