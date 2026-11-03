@@ -30,6 +30,12 @@ python Q22_mesh_optimization.py --prompt "a rainbow color cow"
 python Q22_mesh_optimization.py --prompt "a zebra color cow"
 ```
 ```
+python Q23_nerf_optimization.py \
+    --prompt "a standing corgi dog" \
+    --lambda_entropy 1e-3 \
+    --lambda_orient 1e-2 \
+    --latent_iter_ratio 0.4 \
+    --postfix "_exp1"
 ```
 
 # 0. Environment Setup
