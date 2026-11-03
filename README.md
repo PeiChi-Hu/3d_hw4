@@ -14,6 +14,22 @@ python render.py
 ## Q2
 ```
 python Q21_image_optimization.py --prompt "a hamburger" --sds_guidance 0
+python Q21_image_optimization.py --prompt "a hamburger" --sds_guidance 1
+
+python Q21_image_optimization.py --prompt "a standing corgi dog" --sds_guidance 0
+python Q21_image_optimization.py --prompt "a standing corgi dog" --sds_guidance 1
+
+python Q21_image_optimization.py --prompt "a halloween pumpkin" --sds_guidance 0
+python Q21_image_optimization.py --prompt "a halloween pumpkin" --sds_guidance 1
+
+python Q21_image_optimization.py --prompt "a flying bird" --sds_guidance 0
+python Q21_image_optimization.py --prompt "a flying bird" --sds_guidance 1
+```
+```
+python Q22_mesh_optimization.py --prompt "a rainbow color cow"
+python Q22_mesh_optimization.py --prompt "a zebra color cow"
+```
+```
 ```
 
 # 0. Environment Setup
