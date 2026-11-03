@@ -1,5 +1,21 @@
 # 16-825 Assignment 4
 
+# Command
+## Q1
+```
+python render.py
+```
+```
+python train.py
+```
+```
+python render.py
+```
+## Q2
+```
+python Q21_image_optimization.py --prompt "a hamburger" --sds_guidance 0
+```
+
 # 0. Environment Setup
 
 - Please follow the environment setup instructions from the previous assignment.

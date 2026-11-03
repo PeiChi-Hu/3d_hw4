@@ -25,7 +25,7 @@ class SDS:
 
         # Set the stable diffusion model key based on the version
         if sd_version == "2.1":
-            sd_model_key = "stabilityai/stable-diffusion-2-1-base"
+            sd_model_key = "sd2-community/stable-diffusion-2-1-base"
         else:
             raise NotImplementedError(
                 f"Stable diffusion version {sd_version} not supported"

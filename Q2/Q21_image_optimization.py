@@ -44,14 +44,14 @@ def optimize_an_image(
         if args.sds_guidance:
             loss = sds.sds_loss(
                 latents=latents,
-                text_embeddings=embeddings["text_embeddings"],
-                text_embeddings_uncond=embeddings["uncond_embeddings"],
+                text_embeddings=embeddings["default"],
+                text_embeddings_uncond=embeddings["uncond"],
                 guidance_scale=100,
             )
         else:
             loss = sds.sds_loss(
                 latents=latents,
-                text_embeddings=embeddings["text_embeddings"],
+                text_embeddings=embeddings["default"],
                 text_embeddings_uncond=None,
                 guidance_scale=1,
             )
