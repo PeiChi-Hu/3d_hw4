@@ -11,6 +11,9 @@ python train.py
 ```
 python render.py
 ```
+```
+python train_harder_scene.py --num_itrs 1000 --out_path ./output/baseline
+```
 ## Q2
 ```
 python Q21_image_optimization.py --prompt "a hamburger" --sds_guidance 0

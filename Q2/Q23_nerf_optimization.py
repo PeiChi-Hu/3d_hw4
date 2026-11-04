@@ -172,15 +172,15 @@ def optimize_nerf(
             ### YOUR CODE HERE ###
             latents = sds.encode_imgs(pred_rgb)
             if args.use_lpips:
-                loss = sds.sds_loss(
+                loss = sds.sds_loss_lpips(
+                    pred_rgb=pred_rgb,
                     latents=latents,
                     text_embeddings=text_cond,
                     text_embeddings_uncond=text_uncond,
                     guidance_scale=100,
                 )
             else:
-                loss = sds.sds_loss_lpips(
-                    pred_rgb=pred_rgb,
+                loss = sds.sds_loss(
                     latents=latents,
                     text_embeddings=text_cond,
                     text_embeddings_uncond=text_uncond,

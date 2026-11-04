@@ -247,6 +247,9 @@ class SDS:
             target_rgb = (target_rgb / 2 + 0.5).clamp(0, 1)
 
 
+        if pred_rgb.shape[-2:] != target_rgb.shape[-2:]:
+            pred_rgb = F.interpolate(pred_rgb, size=target_rgb.shape[-2:], mode="bilinear", align_corners=False)
+
         pred_rgb_norm = pred_rgb * 2 - 1
         target_rgb_norm = target_rgb.detach() * 2 - 1
 

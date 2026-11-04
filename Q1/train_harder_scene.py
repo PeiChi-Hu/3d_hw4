@@ -12,13 +12,19 @@ from data_utils import visualize_renders
 from data_utils_harder_scene import get_nerf_datasets, trivial_collate
 
 from pytorch3d.renderer import PerspectiveCameras
+from pytorch3d.loss import ssim_loss
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 def make_trainable(gaussians):
 
     ### YOUR CODE HERE ###
     # HINT: You can access and modify parameters from gaussians
-    pass
+    gaussians.means.requires_grad = True
+    if not gaussians.is_isotropic:
+        gaussians.pre_act_quats.requires_grad = True
+    gaussians.pre_act_scales.requires_grad = True
+    gaussians.pre_act_opacities.requires_grad = True
+    gaussians.colours.requires_grad = True
 
 def setup_optimizer(gaussians):
 
@@ -32,12 +38,13 @@ def setup_optimizer(gaussians):
     # HINT: Consider setting different learning rates for different sets of parameters.
     parameters = [
         {'params': [gaussians.pre_act_opacities], 'lr': 0.05, "name": "opacities"},
-        {'params': [gaussians.pre_act_scales], 'lr': 0.05, "name": "scales"},
-        {'params': [gaussians.colours], 'lr': 0.05, "name": "colours"},
-        {'params': [gaussians.means], 'lr': 0.05, "name": "means"},
+        {'params': [gaussians.pre_act_scales], 'lr': 0.005, "name": "scales"},
+        {'params': [gaussians.colours], 'lr': 0.005, "name": "colours"},
+        {'params': [gaussians.means], 'lr': 0.005, "name": "means"},
     ]
+    if not gaussians.is_isotropic:
+        parameters.append({'params': [gaussians.pre_act_quats], 'lr': 0.002, "name": "quats"})
     optimizer = torch.optim.Adam(parameters, lr=0.0, eps=1e-15)
-    optimizer = None
 
     return optimizer
 
@@ -117,11 +124,21 @@ def run_training(args):
         # HINT: Set img_size to (128, 128)
         # HINT: Get per_splat from args.gaussians_per_splat
         # HINT: camera is available above
-        pred_img = None
+        pred_img, depth, mask = scene.render(
+            camera=camera,
+            per_splat=args.gaussians_per_splat,
+            img_size=(128, 128),
+            bg_colour=(0.0, 0.0, 0.0)
+        )
 
         # Compute loss
         ### YOUR CODE HERE ###
-        loss = None
+        if args.ssim_loss:
+            l1 = torch.nn.functional.l1_loss(pred_img, gt_img)
+            ssim = ssim_loss(pred_img, gt_img)
+            loss = 0.8 * l1 + 0.2 * (1.0 - ssim)
+        else:
+            loss = torch.nn.functional.l1_loss(pred_img, gt_img)
 
         loss.backward()
         optimizer.step()
@@ -160,7 +177,12 @@ def run_training(args):
             # HINT: Set img_size to (128, 128)
             # HINT: Get per_splat from args.gaussians_per_splat
             # HINT: camera is available above
-            pred_img = None
+            pred_img, depth, mask = scene.render(
+                camera=camera,
+                per_splat=args.gaussians_per_splat,
+                img_size=(128, 128),
+                bg_colour=(0.0, 0.0, 0.0)
+            )
 
         pred_npy = pred_img.detach().cpu().numpy()
         pred_npy = (np.clip(pred_npy, 0.0, 1.0) * 255.0).astype(np.uint8)
@@ -186,7 +208,12 @@ def run_training(args):
             # HINT: Set img_size to (128, 128)
             # HINT: Get per_splat from args.gaussians_per_splat
             # HINT: camera is available above
-            pred_img = None
+            pred_img, depth, mask = scene.render(
+                camera=camera,
+                per_splat=args.gaussians_per_splat,
+                img_size=(128, 128),
+                bg_colour=(0.0, 0.0, 0.0)
+            )
 
             gt_npy = gt_img.detach().cpu().numpy()
             pred_npy = pred_img.detach().cpu().numpy()
@@ -233,6 +260,10 @@ def get_args():
         help="Frequency with which visualization should be performed."
     )
     parser.add_argument("--device", default="cuda", type=str, choices=["cuda", "cpu"])
+    parser.add_argument(
+        "--ssim_loss", default=0, type=int,
+        help="Use SSIM Loss."
+    )
     args = parser.parse_args()
     return args
 
