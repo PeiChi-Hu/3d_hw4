@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from diffusers import DDIMScheduler, StableDiffusionPipeline
+import lpips
 
 
 class SDS:
@@ -60,6 +61,11 @@ class SDS:
             self.device
         )  # for convenient access
 
+        # [Q4.2.3]
+        self.lpips_loss_fn = lpips.LPIPS(net='vgg').to(self.device)
+        for p in self.lpips_loss_fn.parameters():
+            p.requires_grad = False
+
         print(f"[INFO] loaded stable diffusion!")
 
     @torch.no_grad()
@@ -90,6 +96,8 @@ class SDS:
             latents (tensor): latent representation. shape (1, 4, 64, 64)
         """
         # check the shape of the image should be 512x512
+        if img.shape[-2:] != (self.H, self.W):
+            img = F.interpolate(img, size=(self.H, self.W), mode="bilinear", align_corners=False)
         assert img.shape[-2:] == (512, 512), "Image shape should be 512x512"
 
         img = 2 * img - 1  # [0, 1] => [-1, 1]
@@ -177,5 +185,71 @@ class SDS:
 
         target = (latents - gradient).detach()
         loss = torch.mean((latents - target) ** 2)
+
+        return loss
+    
+    def sds_loss_lpips(
+        self,
+        pred_rgb,
+        latents,
+        text_embeddings,
+        text_embeddings_uncond=None,
+        guidance_scale=100,
+        grad_scale=1,
+    ):
+        """
+        Compute the LPIPS loss.
+
+        Args:
+            latents (tensor): input latents, shape [1, 4, 64, 64]
+            text_embeddings (tensor): conditional text embedding (for positive prompt), shape [1, 77, 1024]
+            text_embeddings_uncond (tensor, optional): unconditional text embedding (for negative prompt), shape [1, 77, 1024]. Defaults to None.
+            guidance_scale (int, optional): weight scaling for guidance. Defaults to 100.
+            grad_scale (int, optional): gradient scaling. Defaults to 1.
+
+        Returns:
+            loss (tensor): SDS loss
+        """
+        # sample a timestep ~ U(0.02, 0.98) to avoid very high/low noise level
+        t = torch.randint(
+            self.min_step,
+            self.max_step + 1,
+            (latents.shape[0],),
+            dtype=torch.long,
+            device=self.device,
+        )
+        # predict the noise residual with unet, NO grad!
+        with torch.no_grad():
+            ### YOUR CODE HERE ###
+            noise = torch.randn_like(latents)
+            latents_add_noise = self.scheduler.add_noise(latents, noise, t)
+
+            if text_embeddings_uncond is not None and guidance_scale != 1:
+                ### YOUR CODE HERE ###
+                latent_model_input = torch.cat([latents_add_noise] * 2)
+                tt = torch.cat([t] * 2)
+                text_embeddings_all = torch.cat([text_embeddings_uncond, text_embeddings])
+
+                noise_pred = self.unet(latent_model_input, tt, encoder_hidden_states=text_embeddings_all).sample
+                
+                noise_uncond, noise_text = noise_pred.chunk(2)
+                # CFG (Classifier-Free Guidance)
+                noise_cfg = noise_uncond + guidance_scale * (noise_text - noise_uncond)
+            else:
+                noise_cfg = self.unet(latents_add_noise, t, encoder_hidden_states=text_embeddings).sample
+
+            alpha_t = self.alphas[t].view(-1, 1, 1, 1)
+            latents_z0 = (latents_add_noise - torch.sqrt(1 - alpha_t) * noise_cfg) / torch.sqrt(alpha_t)
+
+
+            latents_z0_scaled = 1 / self.vae.config.scaling_factor * latents_z0
+            target_rgb = self.vae.decode(latents_z0_scaled.type(self.precision_t)).sample
+            target_rgb = (target_rgb / 2 + 0.5).clamp(0, 1)
+
+
+        pred_rgb_norm = pred_rgb * 2 - 1
+        target_rgb_norm = target_rgb.detach() * 2 - 1
+
+        loss = self.lpips_loss_fn(pred_rgb_norm, target_rgb_norm).mean()
 
         return loss

@@ -171,12 +171,21 @@ def optimize_nerf(
   
             ### YOUR CODE HERE ###
             latents = sds.encode_imgs(pred_rgb)
-            loss = sds.sds_loss(
-                latents=latents,
-                text_embeddings=text_cond,
-                text_embeddings_uncond=text_uncond,
-                guidance_scale=100,
-            )
+            if args.use_lpips:
+                loss = sds.sds_loss(
+                    latents=latents,
+                    text_embeddings=text_cond,
+                    text_embeddings_uncond=text_uncond,
+                    guidance_scale=100,
+                )
+            else:
+                loss = sds.sds_loss_lpips(
+                    pred_rgb=pred_rgb,
+                    latents=latents,
+                    text_embeddings=text_cond,
+                    text_embeddings_uncond=text_uncond,
+                    guidance_scale=100,
+                )
 
             # regularizations
             if args.lambda_entropy > 0:
@@ -327,6 +336,8 @@ if __name__ == "__main__":
         default=0,
         help="option to use view dependent text embeddings for nerf optimization",
     )
+    parser.add_argument('--use_lpips', type=bool, default=False, help="Set True in Q2.4.3")
+
     parser = add_config_arguments(
         parser
     )  # add additional arguments for nerf optimization, You don't need to change the setting here by default
