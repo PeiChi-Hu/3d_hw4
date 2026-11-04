@@ -68,6 +68,15 @@ python Q23_nerf_optimization.py \
     --postfix "_2_4_1"
     --view_dep_text 1
 ```
+```
+python Q23_nerf_optimization.py \
+    --prompt "a standing corgi dog" \
+    --lambda_entropy 1e-3 \
+    --lambda_orient 1e-2 \
+    --latent_iter_ratio 0.4 \
+    --postfix "_2_4_3" \
+    --use_lpips 1
+```
 
 # 0. Environment Setup
 

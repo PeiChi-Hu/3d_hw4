@@ -336,7 +336,7 @@ if __name__ == "__main__":
         default=0,
         help="option to use view dependent text embeddings for nerf optimization",
     )
-    parser.add_argument('--use_lpips', type=bool, default=False, help="Set True in Q2.4.3")
+    parser.add_argument('--use_lpips', type=int, default=0, help="Set True in Q2.4.3")
 
     parser = add_config_arguments(
         parser
